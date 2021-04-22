@@ -1,0 +1,11 @@
+/target
+
+# IntelliJ
+*.iml
+.idea/**
+
+# Project's DLL and libraries
+SDL2.dll
+
+# Project's ressources
+roms/**

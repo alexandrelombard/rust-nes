@@ -1,0 +1,10 @@
+[package]
+name = "nes_emulator"
+version = "0.1.0"
+authors = ["Alexandre Lombard"]
+edition = "2018"
+
+[dependencies]
+log = "0.4.14"
+env_logger = "0.8.3"
+sdl2 = "0.34"
