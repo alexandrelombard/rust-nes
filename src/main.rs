@@ -47,7 +47,7 @@ pub fn main() {
             debug!("VBLANK set to true");
 
             // Run test
-            for i in 0..100 {
+            for i in 0..300 {
                 // Run a predefined amount of steps for debug
                 cpu.step(&mut mem);
             }

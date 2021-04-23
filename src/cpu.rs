@@ -128,17 +128,22 @@ impl Cpu {
 
     pub fn step(&mut self, memory: &mut Memory) {
         let opcode = memory.read(self.pc);
-        debug!("A: 0x{0:02x}, X: 0x{1:02x}, Y: 0x{2:02x}", self.a, self.x, self.y);
+        debug!("A: 0x{0:02x}, X: 0x{1:02x}, Y: 0x{2:02x}, P: 0x{3:02x}, SP: 0x{4:02x}", self.a, self.x, self.y, self.p, self.s);
         debug!("PC: 0x{0:02x}, OpCode: 0x{1:02x}", self.pc, opcode);
         self.execute_opcode(opcode, memory);
     }
 
     pub fn execute_opcode(&mut self, opcode: u8, memory: &mut Memory) {
         match opcode {
-            0x00 => {
+            0x00 => {   // BRK
                 self.brk(memory);
                 self.cycles += 7;
             },
+            0x09 => {   // ORA IMM
+                self.ora(memory, memory.get_immediate(self.pc));
+                self.pc += 2;
+                self.cycles += 4;
+            }
             0x10 => {   // BPL REL
                 self.bpl(memory.get_relative(self.pc));
                 self.pc += 2;
@@ -157,11 +162,16 @@ impl Cpu {
                 self.pc += 1;
             }
             0x20 => {   // JSR ABS
-                self.jsr(memory, memory.get_absolute(self.pc));
+                self.jsr(memory, memory.get_absolute(self.pc), 2);
             }
             0x29 => {   // AND IMM
                 self.and(memory, memory.get_zeropage(self.pc));
-                self.pc += 1;
+                self.pc += 2;
+            }
+            0x2c => {   // BIT ABS
+                self.bit(memory, memory.get_absolute(self.pc));
+                self.pc += 3;
+                self.cycles += 4;
             }
             0x2d => {   // AND ABS
                 self.and(memory, memory.get_absolute(self.pc));
@@ -183,9 +193,24 @@ impl Cpu {
                 self.and(memory, memory.get_absolute_x(self.pc, self.x));
                 self.pc += 1;
             }
+            0x40 => {   // RTI IMP
+                self.rti(memory);
+                self.cycles += 6;
+            }
+            0x4a => {   // LSR AKK
+                self.lsr_akk();
+                self.pc += 1;
+            }
+            0x4c => {   // JMP ABS
+                self.jmp(memory.get_absolute(self.pc));
+            }
             0x58 => {   // CLI IMP
                 self.cli();
                 self.pc += 1;
+            }
+            0x60 => {   // RTS IMP
+                self.rts(memory);
+                self.cycles += 6;
             }
             0x78 => {   // SEI IMP
                 self.sei();
@@ -203,13 +228,34 @@ impl Cpu {
                 self.dey();
                 self.pc += 1;
             }
+            0x8a => {   // TXA IMP
+                self.txa();
+                self.pc += 1;
+            }
+            0x8c => {   // STY ABS
+                self.sty(memory, memory.get_absolute(self.pc));
+                self.pc += 3;
+                self.cycles += 4;
+            }
             0x8d => {   // STA ABS
                 self.sta(memory, memory.get_absolute(self.pc));
                 self.pc += 3;
+                self.cycles += 4;
+            }
+            0x8e => {   // STX ABS
+                self.stx(memory, memory.get_absolute(self.pc));
+                self.pc += 3;
+                self.cycles += 4;
             }
             0x91 => {   // STA INY
                 self.sta(memory, memory.get_indirect_y(self.pc, self.y));
                 self.pc += 2;
+                self.cycles += 6;
+            }
+            0x99 => {   // STA ABY
+                self.sta(memory, memory.get_absolute_y(self.pc, self.y));
+                self.pc += 3;
+                self.cycles += 5;
             }
             0x9a => {   // TXS IMP
                 self.txs();
@@ -249,6 +295,11 @@ impl Cpu {
                 self.pc += 2;
                 self.cycles += 2;
             }
+            0xc8 => {   // INY IMP
+                self.iny();
+                self.pc += 1;
+                self.cycles += 2;
+            }
             0xc9 => {   // CMP IMM
                 self.cmp(memory, memory.get_immediate(self.pc));
                 self.pc += 2;
@@ -268,7 +319,12 @@ impl Cpu {
             }
             0xe0 => {   // CPX IMM
                 self.cpx(memory, memory.get_immediate(self.pc));
-                self.pc += 2
+                self.pc += 2;
+            }
+            0xee => {   // INC ABS
+                self.inc(memory, memory.get_absolute(self.pc));
+                self.pc += 3;
+                self.cycles += 6;
             }
             0xf0 => {   // BEQ REL
                 self.beq(memory.get_relative(self.pc));
@@ -286,10 +342,10 @@ impl Cpu {
         }
     }
 
-    /// Update the zero and negative flags according to the value of the register A
+    /// Update the zero and negative flags according to the provided value
     fn update_sz(&mut self, val: u8) {
-        self.set_status(FLAG_ZERO, val == 0);
-        self.set_status(FLAG_NEGATIVE, val & 0x80 != 0);
+        self.set_zero(val == 0);
+        self.set_negative(val & 0b10000000 != 0);
     }
 
     // region Flag control
@@ -310,7 +366,15 @@ impl Cpu {
     }
 
     fn set_carry(&mut self, carry: bool) {
-        self.set_status(FLAG_CARRY, carry)
+        self.set_status(FLAG_CARRY, carry);
+    }
+
+    fn set_negative(&mut self, negative: bool) {
+        self.set_status(FLAG_NEGATIVE, negative);
+    }
+
+    fn set_zero(&mut self, zero: bool) {
+        self.set_status(FLAG_ZERO, zero);
     }
     // endregion
 
@@ -350,6 +414,13 @@ impl Cpu {
     // region Operations
     fn adc(&mut self, memory: &Memory, address: u16) {
         self.add(memory.read(address));
+    }
+
+    fn add(&mut self, val: u8) {
+        let sum = self.a + val + self.get_carry();
+        self.set_status(FLAG_OVERFLOW, (!(self.a ^ val) & (self.a ^ sum) & 0x80) > 0);
+        self.a = sum;
+        self.update_sz(self.a);
     }
 
     fn and(&mut self, memory: &Memory, address: u16) {
@@ -399,15 +470,15 @@ impl Cpu {
     }
 
     fn bne(&mut self, address: u16) {
-        if !self.get_status(FLAG_ZERO) {
+        if self.get_status(FLAG_ZERO) { // TODO Check if !self or self
             self.add_branch_cycles(address);
             self.pc = address;
         }
     }
 
     fn bpl(&mut self, address: u16) {
-        if !self.get_status(FLAG_NEGATIVE) {
-            // self.add_branch_cycles(pc, addr);
+        if !self.get_status(FLAG_NEGATIVE) {    // TODO Check if !self or self
+            self.add_branch_cycles(address);
             self.pc = address;
         }
     }
@@ -426,13 +497,6 @@ impl Cpu {
         let lo = memory.read(0xFFFE) as u16;
         let hi = memory.read(0xFFFF) as u16;
         self.pc = (hi << 8) | lo;
-    }
-
-    fn add(&mut self, val: u8) {
-        let sum = self.a + val + self.get_carry();
-        self.set_status(FLAG_OVERFLOW, (!(self.a ^ val) & (self.a ^ sum) & 0x80) > 0);
-        self.a = sum;
-        self.update_sz(self.a);
     }
 
     fn clc(&mut self) {
@@ -484,8 +548,31 @@ impl Cpu {
         self.update_sz(n);
     }
 
-    fn jsr(&mut self, memory: &mut Memory, address: u16) {
-        let ret_address = self.pc;
+    fn inc(&mut self, memory: &mut Memory, address: u16) {
+        let val = memory.read(address);
+        let n = val.wrapping_add(1);
+        memory.write(address, n);
+        self.update_sz(n);
+    }
+
+    fn inx(&mut self) {
+        let n = self.x.wrapping_add(1);
+        self.x = n;
+        self.update_sz(n);
+    }
+
+    fn iny(&mut self) {
+        let n = self.y.wrapping_add(1);
+        self.y = n;
+        self.update_sz(n);
+    }
+
+    fn jmp(&mut self, address: u16) {
+        self.pc = address;
+    }
+
+    fn jsr(&mut self, memory: &mut Memory, address: u16, offset: u16) {
+        let ret_address = self.pc + offset;
         self.stack_push16(memory, ret_address);
         self.pc = address;
     }
@@ -508,6 +595,26 @@ impl Cpu {
         self.update_sz(val)
     }
 
+    fn lsr(&mut self, memory: &mut Memory, address: u16) {
+        let val = memory.read(address);
+
+        self.set_carry(val & 0x01 == 1);
+        let n = val >> 1;
+        self.update_sz(n);
+
+        memory.write(address, n);
+    }
+
+    fn lsr_akk(&mut self) {
+        let val = self.a;
+
+        self.set_carry(val & 0x01 == 1);
+        let n = val >> 1;
+        self.update_sz(n);
+
+        self.a = n;
+    }
+
     fn nop(&mut self) {}
 
     fn ora(&mut self, memory: &Memory, address: u16) {
@@ -515,6 +622,19 @@ impl Cpu {
         let na = self.a | val;
         self.a = na;
         self.update_sz(na);
+    }
+
+    fn rti(&mut self, memory: &Memory) {
+        let flags = self.stack_pop8(memory) & 0xef | 0x20;
+        self.p = flags;
+
+        let ret_addr = self.stack_pop16(memory);
+        self.pc = ret_addr;
+    }
+
+    fn rts(&mut self, memory: &Memory) {
+        let ret_addr = self.stack_pop16(memory);
+        self.pc = ret_addr + 1;
     }
 
     fn sbc(&mut self, memory: &Memory, address: u16) {
@@ -533,16 +653,16 @@ impl Cpu {
         self.set_status(FLAG_INTERRUPT_DISABLE, true);
     }
 
-    fn sta(&mut self, memory: &mut Memory, addr: u16) {
-        memory.write(addr, self.a);
+    fn sta(&mut self, memory: &mut Memory, address: u16) {
+        memory.write(address, self.a);
     }
 
-    fn stx(&mut self, memory: &mut Memory, addr: u16) {
-        memory.write(addr, self.x);
+    fn stx(&mut self, memory: &mut Memory, address: u16) {
+        memory.write(address, self.x);
     }
 
-    fn sty(&mut self, memory: &mut Memory, addr: u16) {
-        memory.write(addr, self.y);
+    fn sty(&mut self, memory: &mut Memory, address: u16) {
+        memory.write(address, self.y);
     }
 
     fn tax(&mut self) {
