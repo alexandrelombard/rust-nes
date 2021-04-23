@@ -37,6 +37,8 @@ impl Memory {
 
     /// Load the given ROM into the virtual memory
     pub fn load(&mut self, rom_file: RomFile) {
+        self.data[0xc000..0xc000+0x4000].clone_from_slice(&rom_file.data[0x10..0x10+0x4000]);
+
         let prg_data = rom_file.prg_data();
         self.data[0x8000..0x8000+prg_data.len()].clone_from_slice(&prg_data);
     }

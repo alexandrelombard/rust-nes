@@ -20,6 +20,7 @@ pub fn main() {
     env_logger::init();
 
     let result = rom_file::read("roms/Super Mario Bros. (World).nes");
+    // let result = rom_file::read("roms/nestest.nes");
 
     if result.is_ok() {
         let rom_file = result.unwrap();
@@ -36,6 +37,8 @@ pub fn main() {
 
             let mut cpu = Cpu::new(&mem);
 
+            let mut ppu = Ppu::new();
+
             // Run test
             for i in 0..20 {
                 // Run a predefined amount of steps for debug
@@ -43,7 +46,7 @@ pub fn main() {
             }
 
             // Set VBLANK to true and run for another set of steps
-            mem.set_vblank(true);
+            ppu.set_vblank(&mut mem, true);
             debug!("VBLANK set to true");
 
             // Run test

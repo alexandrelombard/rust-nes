@@ -114,7 +114,7 @@ impl Cpu {
         let addr = (hi << 8) | lo;
         self.pc = addr;
 
-        self.p = 0x24;
+        self.p = 0x4;
 
         self.s = STACK_INIT;
         self.a = 0;
@@ -348,6 +348,14 @@ impl Cpu {
         self.set_negative(val & 0b10000000 != 0);
     }
 
+    // region Interrupts
+    fn handle_nmi(&mut self, memory: &mut Memory) {
+        self.stack_push16(memory, self.pc);
+        self.stack_push8(memory, self.p);
+        self.pc = (memory.read(0xfffb) as u16) << 8 | memory.read(0xfffa) as u16;
+    }
+    // endregion
+
     // region Flag control
     fn get_status(&self, flag: u8) -> bool {
         self.p & flag != 0
@@ -580,7 +588,7 @@ impl Cpu {
     fn lda(&mut self, memory: &Memory, address: u16) {
         let val = memory.read(address);
         self.a = val;
-        self.update_sz(val)
+        self.update_sz(val);
     }
 
     fn ldx(&mut self, memory: &Memory, address: u16) {
