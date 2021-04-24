@@ -139,14 +139,68 @@ impl Cpu {
                 self.brk(memory);
                 self.cycles += 7;
             },
+            0x01 => {   // ORA INX
+                self.ora(memory, memory.get_indirect_x(self.pc, self.x));
+                self.pc += 2;
+                self.cycles += 6;
+            }
+            0x05 => {   // ORA ZP
+                self.ora(memory, memory.get_zeropage(self.pc));
+                self.pc += 2;
+                self.cycles += 3;
+            }
+            0x06 => {   // ASL ZP
+                self.asl(memory, memory.get_zeropage(self.pc));
+                self.pc += 2;
+                self.cycles += 5;
+            }
+            0x08 => {   // PHP IMP
+                self.php(memory);
+                self.pc += 1;
+                self.cycles += 3;
+            }
             0x09 => {   // ORA IMM
                 self.ora(memory, memory.get_immediate(self.pc));
                 self.pc += 2;
                 self.cycles += 4;
             }
+            0x0a => {   // ASL AKK
+                self.asl_akk();
+                self.pc += 1;
+                self.cycles += 2;
+            }
+            0x0c => {   // NOP
+                self.nop();
+                self.pc += 1;
+            }
+            0x0d => {   // ORA ABS
+                self.ora(memory, memory.get_absolute(self.pc));
+                self.pc += 3;
+                self.cycles += 4;
+            }
+            0x0e => {   // ASL ABS
+                self.asl(memory, memory.get_absolute(self.pc));
+                self.pc += 3;
+                self.cycles += 6;
+            }
             0x10 => {   // BPL REL
                 self.bpl(memory.get_relative(self.pc));
                 self.pc += 2;
+            }
+            0x11 => {   // ORA INY
+                self.ora(memory, memory.get_indirect_y(self.pc, self.y));
+                self.pc += 2;
+                // TODO Cycles
+            }
+            0x15 => {   // ORA ZPX
+                self.ora(memory, memory.get_zeropage_x(self.pc, self.x));
+                self.pc += 1;
+                self.cycles += 4;
+            }
+            0x16 => {   // ASL ZPX
+                self.asl(memory, memory.get_zeropage_x(self.pc, self.x));
+                self.pc += 1;
+                self.cycles += 6;
             }
             0x18 => {
                 self.clc();
@@ -156,17 +210,66 @@ impl Cpu {
             0x19 => {   // ORA ABY
                 self.ora(memory,memory.get_absolute_y(self.pc, self.y));
                 self.pc += 1;
+                // TODO Cycles
             }
             0x1a => {   // NOP
                 self.nop();
                 self.pc += 1;
+                // TODO Cycles
+            }
+            0x1c => {   // NOP
+                self.nop();
+                self.pc += 1;
+                // TODO Cycles
+            }
+            0x1d => {   // ORA ABX
+                self.ora(memory, memory.get_absolute_x(self.pc, self.x));
+                self.pc += 1;
+                // TODO Cycles
+            }
+            0x1e => {   // ASL ABX
+                self.asl(memory, memory.get_absolute_x(self.pc, self.x));
+                self.pc += 1;
+                self.cycles += 7;
             }
             0x20 => {   // JSR ABS
                 self.jsr(memory, memory.get_absolute(self.pc), 2);
+                self.cycles += 6;
+            }
+            0x21 => {   // AND INX
+                self.and(memory, memory.get_indirect_x(self.pc, self.x));
+                self.pc += 2;
+                self.cycles += 6;
+            }
+            0x24 => {   // BIT ZP
+                self.bit(memory, memory.get_zeropage(self.pc));
+                self.pc += 2;
+                self.cycles += 3;
+            }
+            0x25 => {   // AND ZP
+                self.and(memory, memory.get_zeropage(self.pc));
+                self.pc += 2;
+                self.cycles += 3;
+            }
+            0x26 => {   // ROL ZP
+                self.rol(memory, memory.get_zeropage(self.pc));
+                self.pc += 2;
+                self.cycles += 5;
+            }
+            0x28 => {   // PLP IMP
+                self.plp(memory);
+                self.pc += 1;
+                self.cycles += 4;
             }
             0x29 => {   // AND IMM
                 self.and(memory, memory.get_zeropage(self.pc));
                 self.pc += 2;
+                self.cycles += 2;
+            }
+            0x2a => {   // ROL AKK
+                self.rol_akk();
+                self.pc += 1;
+                self.cycles += 2;
             }
             0x2c => {   // BIT ABS
                 self.bit(memory, memory.get_absolute(self.pc));
@@ -175,23 +278,53 @@ impl Cpu {
             }
             0x2d => {   // AND ABS
                 self.and(memory, memory.get_absolute(self.pc));
-                self.pc += 1;
+                self.pc += 3;
+                self.cycles += 4;
+            }
+            0x2e => {   // ROL ABS
+                self.rol(memory, memory.get_absolute(self.pc));
+                self.pc += 3;
+                self.cycles += 6;
+            }
+            0x30 => {   // BMI REL
+                self.bmi(memory.get_relative(self.pc));
+                self.pc += 2;
+                // TODO Cycles
             }
             0x31 => {   // AND INY
                 self.and(memory, memory.get_indirect_y(self.pc, self.y));
                 self.pc += 2;
+                // TODO Cycles
             }
             0x35 => {   // AND ZPX
                 self.and(memory, memory.get_zeropage_x(self.pc, self.x));
                 self.pc += 1;
+                self.cycles += 4;
+            }
+            0x36 => {   // ROL ZPX
+                self.rol(memory, memory.get_zeropage_x(self.pc, self.x));
+                self.pc += 1;
+                self.cycles += 5;
+            }
+            0x38 => {   // SEC IMP
+                self.sec();
+                self.pc += 1;
+                self.cycles += 2;
             }
             0x39 => {   // AND ABY
                 self.and(memory, memory.get_absolute_y(self.pc, self.y));
                 self.pc += 1;
+                // TODO Cycles
             }
             0x3d => {   // AND ABX
                 self.and(memory, memory.get_absolute_x(self.pc, self.x));
                 self.pc += 1;
+                // TODO Cycles
+            }
+            0x3e => {   // ROL ABX
+                self.rol(memory, memory.get_absolute_x(self.pc, self.x));
+                self.pc += 1;
+                self.cycles += 7;
             }
             0x40 => {   // RTI IMP
                 self.rti(memory);
@@ -437,20 +570,22 @@ impl Cpu {
         self.update_sz(self.a);
     }
 
-    fn asl(&mut self, memory: &mut Memory, address: u16, addressing_mode: AddressingMode) {
-        let val = match addressing_mode {
-            AddressingMode::Accumulator => self.a,
-            _ => memory.read(address),
-        };
-
+    fn asl(&mut self, memory: &mut Memory, address: u16) {
+        let val = memory.read(address);
         self.set_carry(val & 0x80 != 0);
 
         let n = (val << 1) & 0xff;
+        memory.write(address, n);
 
-        match addressing_mode {
-            AddressingMode::Accumulator => { self.a = n; },
-            _ => { memory.write(address, n); }
-        };
+        self.update_sz(n);
+    }
+
+    fn asl_akk(&mut self) {
+        let val = self.a;
+        self.set_carry(val & 0x80 != 0);
+
+        let n = (val << 1) & 0xff;
+        self.a = n;
 
         self.update_sz(n);
     }
@@ -475,6 +610,13 @@ impl Cpu {
         self.set_status(FLAG_OVERFLOW, (val >> 0x06 & 0x01) == 1);
         let f = self.a & val;
         self.set_status(FLAG_ZERO, f == 0)
+    }
+
+    fn bmi(&mut self, addr: u16) {
+        if self.get_status(FLAG_NEGATIVE) {
+            self.add_branch_cycles(address);
+            self.pc = address;
+        }
     }
 
     fn bne(&mut self, address: u16) {
@@ -630,6 +772,61 @@ impl Cpu {
         let na = self.a | val;
         self.a = na;
         self.update_sz(na);
+    }
+
+    fn php(&mut self, memory: &mut Memory) {
+        self.stack_push8(memory, self.p | 0x10);
+    }
+
+    fn pla(&mut self, memory: &mut Memory) {
+        let rv = self.stack_pop8(memory);
+        self.a = rv;
+        self.update_sz(rv);
+    }
+
+    pub fn plp(&mut self, memory: &mut Memory) {
+        let p = self.stack_pop8(memory) & 0xef | 0x20;
+        self.p = p;
+    }
+
+    fn rol(&mut self, memory: &mut Memory, address: u16) {
+        let val =  memory.read(address);
+
+        let n = (val << 1) | (self.get_carry() as u8);
+        self.set_carry(val & 0x80 != 0);
+        self.update_sz(n);
+
+        memory.write(address, n);
+    }
+
+    fn rol_akk(&mut self) {
+        let val = self.a;
+
+        let n = (val << 1) | (self.get_carry() as u8);
+        self.set_carry(val & 0x80 != 0);
+        self.update_sz(n);
+
+        self.a = n;
+    }
+
+    pub fn ror(&mut self, memory: &mut Memory, address: u16) {
+        let val = memory.read(address);
+
+        let n = (val >> 1) | ((self.get_carry() as u8) << 7);
+        self.set_carry(val & 0x01 == 1);
+        self.update_sz(n);
+
+        emory.write(address, n);
+    }
+
+    pub fn ror_akk(&mut self) {
+        let val = self.a;
+
+        let n = (val >> 1) | ((self.get_carry() as u8) << 7);
+        self.set_carry(val & 0x01 == 1);
+        self.update_sz(n);
+
+        self.a = n;
     }
 
     fn rti(&mut self, memory: &Memory) {

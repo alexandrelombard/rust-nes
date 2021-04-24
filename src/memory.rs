@@ -1,5 +1,7 @@
 use crate::rom_file::RomFile;
 
+use log::{debug, info, error, warn};
+
 pub const NES_INTERNAL_RAM: u16 = 0x0000;
 pub const NES_PPU_REGISTERS: u16 = 0x2000;
 pub const NES_APU_IO_REGISTERS: u16 = 0x4000;
@@ -37,6 +39,10 @@ impl Memory {
 
     /// Load the given ROM into the virtual memory
     pub fn load(&mut self, rom_file: RomFile) {
+        if rom_file.get_mapper_type() != 0 {
+            error!("Unsupported mapper");   // For now on, we only support the mapper 0
+        }
+
         self.data[0xc000..0xc000+0x4000].clone_from_slice(&rom_file.data[0x10..0x10+0x4000]);
 
         let prg_data = rom_file.prg_data();

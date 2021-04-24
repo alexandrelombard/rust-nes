@@ -8,6 +8,13 @@ const FLAG_MIRRORING: u8 = 0b00000001;
 const FLAG_CARTRIDGE_BATTERY: u8 = 0b00000010;
 const FLAG_TRAINER: u8 = 0b00000100;
 const FLAG_MIRRORING_CONTROL: u8 = 0b00001000;
+const FLAG_MAPPER: u8 = 0b11110000;
+
+pub enum Mirroring {
+    VERTICAL,
+    HORIZONTAL,
+    FOUR_SCREEN
+}
 
 /// ROM file (INES format)
 pub struct RomFile {
@@ -16,6 +23,22 @@ pub struct RomFile {
 }
 
 impl RomFile {
+    /// Reads a ROM file
+    pub fn new(path: &str) -> io::Result<RomFile> {
+        let result = fs::read(path);
+
+        return if result.is_ok() {
+            let file_data = result.unwrap();
+
+            Ok(RomFile {
+                file_path: path.to_string(),
+                data: file_data
+            })
+        } else {
+            Err(result.unwrap_err())
+        }
+    }
+
     /// True if the header contains the NES signature
     pub fn is_nes(&self) -> bool {
         self.data[0] == 0x4E &&
@@ -63,6 +86,24 @@ impl RomFile {
         (self.data[6] & FLAG_TRAINER) != 0
     }
 
+    /// Gets the mapper type
+    pub fn get_mapper_type(&self) -> u8 {
+        (self.data[6] & FLAG_MAPPER) >> 4
+    }
+
+    /// Gets the mirroring type
+    pub fn get_mirroring(&self) -> Mirroring {
+        return if (self.data[6] & FLAG_MIRRORING_CONTROL) != 0 {
+            Mirroring::FOUR_SCREEN
+        } else {
+            if (self.data[6] & FLAG_MIRRORING) != 0 {
+                Mirroring::VERTICAL
+            } else {
+                Mirroring::HORIZONTAL
+            }
+        }
+    }
+
     pub fn prg_data_address(&self) -> u16 {
         if self.has_trainer() {
             HEADER_SIZE + TRAINER_SIZE
@@ -73,22 +114,6 @@ impl RomFile {
 
     pub fn chr_data_address(&self) -> u16 {
         self.prg_data_address() + self.prg_size()
-    }
-}
-
-/// Reads a ROM file
-pub fn read(path: &str) -> io::Result<RomFile> {
-    let result = fs::read(path);
-
-    return if result.is_ok() {
-        let file_data = result.unwrap();
-
-        Ok(RomFile {
-            file_path: path.to_string(),
-            data: file_data
-        })
-    } else {
-        Err(result.unwrap_err())
     }
 }
 
