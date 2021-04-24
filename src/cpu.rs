@@ -612,7 +612,7 @@ impl Cpu {
         self.set_status(FLAG_ZERO, f == 0)
     }
 
-    fn bmi(&mut self, addr: u16) {
+    fn bmi(&mut self, address: u16) {
         if self.get_status(FLAG_NEGATIVE) {
             self.add_branch_cycles(address);
             self.pc = address;
@@ -816,7 +816,7 @@ impl Cpu {
         self.set_carry(val & 0x01 == 1);
         self.update_sz(n);
 
-        emory.write(address, n);
+        memory.write(address, n);
     }
 
     pub fn ror_akk(&mut self) {
