@@ -38,7 +38,7 @@ impl Memory {
     }
 
     /// Load the given ROM into the virtual memory
-    pub fn load(&mut self, rom_file: RomFile) {
+    pub fn load(&mut self, rom_file: &RomFile) {
         if rom_file.get_mapper_type() != 0 {
             error!("Unsupported mapper");   // For now on, we only support the mapper 0
         }

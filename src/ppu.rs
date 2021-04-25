@@ -1,4 +1,5 @@
 use crate::memory::Memory;
+use crate::rom_file::RomFile;
 
 // https://wiki.nesdev.com/w/index.php/PPU_registers#Status_.28.242002.29_.3C_read
 // https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
@@ -25,16 +26,21 @@ impl Ppu {
         return Ppu {
             cycles: 0,
             scanline: 0,
-            vram: [u8; 0x4000]
+            vram: [0; 0x4000]
         };
     }
 
-    pub fn read_vram(&self, address: u16) {
-        return vram[address];
+    pub fn load(&mut self, rom_file: &RomFile) {
+        let chr_data = rom_file.chr_data();
+        self.vram[0x0000..0x2000].clone_from_slice(&chr_data);
+    }
+
+    pub fn read_vram(&self, address: u16) -> u8 {
+        return self.vram[address as usize];
     }
 
     pub fn write_vram(&mut self, address: u16, val: u8) {
-        vram[address] = val;
+        self.vram[address as usize] = val;
     }
 
     pub fn step(&mut self, memory: &mut Memory) {

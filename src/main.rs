@@ -53,21 +53,22 @@ pub fn main() {
             println!("\tTrainer: {0}", rom_file.has_trainer());
 
             // Initialize the NES emulation system
-            let mut mem = Memory::new();
-            mem.load(rom_file);
+            let mut cpu_mem = Memory::new();
+            cpu_mem.load(&rom_file);
 
-            let mut cpu = Cpu::new(&mem);
+            let mut cpu = Cpu::new(&cpu_mem);
 
             let mut ppu = Ppu::new();
+            ppu.load(&rom_file);
 
             // Run
             'running: loop {
                 canvas.set_draw_color(Color::RGB(0, 0, 0));
                 canvas.clear();
 
-                handle_user_input(&mut mem, &mut event_pump);
-                cpu.step(&mut mem);
-                ppu.step(&mut mem);
+                handle_user_input(&mut cpu_mem, &mut event_pump);
+                cpu.step(&mut cpu_mem);
+                ppu.step(&mut cpu_mem);
 
                 canvas.present();
 
@@ -77,17 +78,17 @@ pub fn main() {
             // Run test
             for i in 0..20 {
                 // Run a predefined amount of steps for debug
-                cpu.step(&mut mem);
+                cpu.step(&mut cpu_mem);
             }
 
             // Set VBLANK to true and run for another set of steps
-            ppu.set_vblank(&mut mem, true);
+            ppu.set_vblank(&mut cpu_mem, true);
             debug!("VBLANK set to true");
 
             // Run test
             for i in 0..300 {
                 // Run a predefined amount of steps for debug
-                cpu.step(&mut mem);
+                cpu.step(&mut cpu_mem);
             }
         } else {
             error!("ROM file is not a NES ROM file: {p} ({s})", p=rom_file.file_path, s=rom_file.data.len());
