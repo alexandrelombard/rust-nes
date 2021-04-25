@@ -51,14 +51,7 @@ impl Memory {
 
     /// Read the data at the given address
     pub fn read(&self, address: u16) -> u8 {
-        if address >= 0x3000 && address <= 0x3eff {
-            self.data[address - 0x1000 as usize]    // Mirrors of 0x2000-0x2eff
-        } else if address >= 0x3f20 && address <= 0x3fff {
-            // TODO
-            self.data[address as usize]
-        } else {
-            self.data[address as usize]
-        }
+        self.data[address as usize]
     }
 
     pub fn write(&mut self, address: u16, val: u8) {
