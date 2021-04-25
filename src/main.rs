@@ -3,22 +3,25 @@ mod cpu;
 mod ppu;
 mod memory;
 mod controller;
+mod nes_debug;
 
 use crate::memory::{Memory, PPU_CTRL};
 use crate::cpu::Cpu;
 use crate::ppu::Ppu;
+use crate::rom_file::RomFile;
+use crate::nes_debug::sdl_ppu;
 
 extern crate sdl2;
 
-use sdl2::pixels::{Color, PixelFormat};
+use sdl2::pixels::{Color, PixelFormat, PixelFormatEnum};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::Duration;
 use log::{LevelFilter, Level, log_enabled, debug, error};
 use sdl2::EventPump;
-use crate::rom_file::RomFile;
 use sdl2::render::{Canvas, Texture, TextureAccess, TextureCreator};
 use std::any::Any;
+use sdl2::rect::Rect;
 
 pub fn main() {
     // Initialize logger
@@ -43,7 +46,12 @@ pub fn main() {
     let texture_creator = canvas.texture_creator();
     let mut texture =
         texture_creator
-            .create_texture(None, TextureAccess::Static, 1024, 256);
+            .create_texture(PixelFormatEnum::RGB24, TextureAccess::Streaming, 1024, 256)
+            .unwrap();
+    let mut debug_chr_texture =
+        texture_creator
+            .create_texture(PixelFormatEnum::RGB24, TextureAccess::Streaming, 256, 256)
+            .unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     // Load the ROM file
@@ -77,25 +85,13 @@ pub fn main() {
                 cpu.step(&mut cpu_mem);
                 ppu.step(&mut cpu_mem);
 
+                // Debug draw
+                nes_debug::sdl_ppu::fill_texture_chr_data(&mut debug_chr_texture, &ppu);
+                canvas.copy(&debug_chr_texture, None, Some(Rect::new(0, 0, 256, 256)));
+
                 canvas.present();
 
                 ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
-            }
-
-            // Run test
-            for i in 0..20 {
-                // Run a predefined amount of steps for debug
-                cpu.step(&mut cpu_mem);
-            }
-
-            // Set VBLANK to true and run for another set of steps
-            ppu.set_vblank(&mut cpu_mem, true);
-            debug!("VBLANK set to true");
-
-            // Run test
-            for i in 0..300 {
-                // Run a predefined amount of steps for debug
-                cpu.step(&mut cpu_mem);
             }
         } else {
             error!("ROM file is not a NES ROM file: {p} ({s})", p=rom_file.file_path, s=rom_file.data.len());
@@ -157,39 +153,3 @@ fn draw<T>(ppu: &Ppu, memory: &Memory, framebuffer: &mut [u8; 1024 * 256 * 3], t
 
     texture.update(None, framebuffer, 256 * 3);
 }
-
-// pub fn main() {
-//     let sdl_context = sdl2::init().unwrap();
-//     let video_subsystem = sdl_context.video().unwrap();
-//
-//     let window = video_subsystem.window("rust-sdl2 demo", 800, 600)
-//         .position_centered()
-//         .build()
-//         .unwrap();
-//
-//     let mut canvas = window.into_canvas().build().unwrap();
-//
-//     canvas.set_draw_color(Color::RGB(0, 255, 255));
-//     canvas.clear();
-//     canvas.present();
-//     let mut event_pump = sdl_context.event_pump().unwrap();
-//     let mut i = 0;
-//     'running: loop {
-//         i = (i + 1) % 255;
-//         canvas.set_draw_color(Color::RGB(i, 64, 255 - i));
-//         canvas.clear();
-//         for event in event_pump.poll_iter() {
-//             match event {
-//                 Event::Quit {..} |
-//                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-//                     break 'running
-//                 },
-//                 _ => {}
-//             }
-//         }
-//         // The rest of the game loop goes here...
-//
-//         canvas.present();
-//         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
-//     }
-// }

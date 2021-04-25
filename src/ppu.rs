@@ -29,6 +29,10 @@ impl Ppu {
         self.vram[0x0000..0x2000].clone_from_slice(&chr_data);
     }
 
+    pub fn vram_data(&self) -> &[u8;0x4000] {
+        return &self.vram;
+    }
+
     pub fn read_vram(&self, address: u16) -> u8 {
         return self.vram[address as usize];
     }
