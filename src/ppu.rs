@@ -17,6 +17,7 @@ const OAM_DMA: u16      = 0x4014;
 pub struct Ppu {
     cycles: u32,
     scanline: u32,
+    vram: [u8; 0x4000]
 }
 
 impl Ppu {
@@ -24,7 +25,16 @@ impl Ppu {
         return Ppu {
             cycles: 0,
             scanline: 0,
+            vram: [u8; 0x4000]
         };
+    }
+
+    pub fn read_vram(&self, address: u16) {
+        return vram[address];
+    }
+
+    pub fn write_vram(&mut self, address: u16, val: u8) {
+        vram[address] = val;
     }
 
     pub fn step(&mut self, memory: &mut Memory) {
