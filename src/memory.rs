@@ -7,6 +7,24 @@ pub const NES_PPU_REGISTERS: u16 = 0x2000;
 pub const NES_APU_IO_REGISTERS: u16 = 0x4000;
 pub const NES_CARTRIDGE_SPACE: u16 = 0x4020;
 
+pub const PPU_CTRL: u16     = 0x2000;
+pub const PPU_MASK: u16     = 0x2001;
+pub const PPU_STATUS: u16   = 0x2002;
+pub const OAM_ADDR: u16     = 0x2003;
+pub const OAM_DATA: u16     = 0x2004;
+pub const PPU_SCROLL: u16   = 0x2005;
+pub const PPU_ADDR: u16     = 0x2006;
+pub const PPU_DATA: u16     = 0x2007;
+pub const OAM_DMA: u16      = 0x4014;
+
+pub const FLAG_NMI_ENABLE: u8               = 0b10000000;
+pub const FLAG_PPU_MASTER_SLAVE: u8         = 0b01000000;
+pub const FLAG_SPRITE_HEIGHT: u8            = 0b00100000;
+pub const FLAG_BACKGROUND_TILE_SELECT: u8   = 0b00010000;
+pub const FLAG_SPRITE_TILE_SELECT: u8       = 0b00001000;
+pub const FLAG_INCREMENT_MODE: u8           = 0b00000100;
+pub const FLAG_NAMETABLE_SELECT: u8         = 0b00000011;
+
 pub enum AddressingMode {
     None,
     Immediate,
@@ -25,7 +43,7 @@ pub enum AddressingMode {
 }
 
 pub struct Memory {
-    data: [u8; 0xFFFF + 1]
+    data: [u8; 0xFFFF + 1],
 }
 
 impl Memory {
@@ -57,6 +75,39 @@ impl Memory {
     pub fn write(&mut self, address: u16, val: u8) {
         self.data[address as usize] = val;
     }
+
+    // region Specific reading functions
+    pub fn get_nmi_enable(&self) -> bool {
+        self.read(PPU_CTRL) & FLAG_NMI_ENABLE != 0
+    }
+
+    pub fn set_nmi_enable(&mut self, nmi_enable: bool) {
+        let val = self.read(PPU_CTRL);
+        if nmi_enable {
+            self.write(PPU_CTRL, val | FLAG_NMI_ENABLE);
+        } else {
+            self.write(PPU_CTRL, val & !FLAG_NMI_ENABLE);
+        }
+    }
+
+    pub fn get_background_tile_select(&self) -> bool {
+        self.read(PPU_CTRL) & FLAG_BACKGROUND_TILE_SELECT != 0
+    }
+
+    pub fn set_background_tile_select(&mut self, nmi_enable: bool) {
+        let val = self.read(PPU_CTRL);
+        if nmi_enable {
+            self.write(PPU_CTRL, val | FLAG_BACKGROUND_TILE_SELECT);
+        } else {
+            self.write(PPU_CTRL, val & !FLAG_BACKGROUND_TILE_SELECT);
+        }
+    }
+
+    pub fn get_background_pattern_table_address_value(&self) -> u16 {
+        // TODO
+        return 0
+    }
+    // endregion
 
     // region Memory addressing
     pub fn get_immediate(&self, address: u16) -> u16 {

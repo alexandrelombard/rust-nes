@@ -127,6 +127,9 @@ impl Cpu {
     }
 
     pub fn step(&mut self, memory: &mut Memory) {
+        // Check interrupt
+        // TODO
+
         let opcode = memory.read(self.pc);
         debug!("A: 0x{0:02x}, X: 0x{1:02x}, Y: 0x{2:02x}, P: 0x{3:02x}, SP: 0x{4:02x}", self.a, self.x, self.y, self.p, self.s);
         debug!("PC: 0x{0:02x}, OpCode: 0x{1:02x}", self.pc, opcode);

@@ -4,19 +4,21 @@ mod ppu;
 mod memory;
 mod controller;
 
-use crate::memory::Memory;
+use crate::memory::{Memory, PPU_CTRL};
 use crate::cpu::Cpu;
 use crate::ppu::Ppu;
 
 extern crate sdl2;
 
-use sdl2::pixels::Color;
+use sdl2::pixels::{Color, PixelFormat};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::Duration;
 use log::{LevelFilter, Level, log_enabled, debug, error};
 use sdl2::EventPump;
 use crate::rom_file::RomFile;
+use sdl2::render::{Canvas, Texture, TextureAccess, TextureCreator};
+use std::any::Any;
 
 pub fn main() {
     // Initialize logger
@@ -37,6 +39,11 @@ pub fn main() {
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
     canvas.present();
+    let mut framebuffer: [u8; 1024 * 256 * 3];
+    let texture_creator = canvas.texture_creator();
+    let mut texture =
+        texture_creator
+            .create_texture(None, TextureAccess::Static, 1024, 256);
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     // Load the ROM file
@@ -129,6 +136,26 @@ pub fn handle_user_input(memory: &mut Memory, event_pump: &mut EventPump) {
             _ => {/* do nothing */}
         }
     }
+}
+
+fn draw<T>(ppu: &Ppu, memory: &Memory, framebuffer: &mut [u8; 1024 * 256 * 3], texture: &mut Texture) {
+    for r in 0..1024 {
+        for col in 0..256 {
+            let tile_nr = ppu.read_vram(0x2000 + (r / 8 * 32) + (col / 8));
+            let tile_attr = ppu.read_vram(0);
+
+            let adr = memory.get_background_pattern_table_address_value() + (tile_nr as u16 * 0x10) + (r % 8) as u16;
+            let pixel = ((ppu.read_vram(adr) >> (7 - (col % 8))) & 1) + (((ppu.read_vram(adr + 8) >> (7 - (col % 8))) & 1) * 2);
+            // framebuffer[(r * 256 * 3) + (col * 3)] = COLORS[pixel];
+            // framebuffer[(r * 256 * 3) + (col * 3) + 1] = COLORS[pixel];
+            // framebuffer[(r * 256 * 3) + (col * 3) + 2] = COLORS[pixel];
+            framebuffer[((r * 256 * 3) + (col * 3)) as usize] = 255;
+            framebuffer[((r * 256 * 3) + (col * 3) + 1) as usize] = 255;
+            framebuffer[((r * 256 * 3) + (col * 3) + 2) as usize] = 255;
+        }
+    }
+
+    texture.update(None, framebuffer, 256 * 3);
 }
 
 // pub fn main() {

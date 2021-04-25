@@ -1,24 +1,17 @@
-use crate::memory::Memory;
+use crate::memory::{Memory, PPU_STATUS};
 use crate::rom_file::RomFile;
 
 // https://wiki.nesdev.com/w/index.php/PPU_registers#Status_.28.242002.29_.3C_read
 // https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
 
-const PPU_CTRL: u16     = 0x2000;
-const PPU_MASK: u16     = 0x2001;
-const PPU_STATUS: u16   = 0x2002;
-const OAM_ADDR: u16     = 0x2003;
-const OAM_DATA: u16     = 0x2004;
-const PPU_SCROLL: u16   = 0x2005;
-const PPU_ADDR: u16     = 0x2006;
-const PPU_DATA: u16     = 0x2007;
-const OAM_DMA: u16      = 0x4014;
+
 
 
 pub struct Ppu {
     cycles: u32,
     scanline: u32,
-    vram: [u8; 0x4000]
+    vram: [u8; 0x4000],
+    nmi_occurred: bool,
 }
 
 impl Ppu {
@@ -26,7 +19,8 @@ impl Ppu {
         return Ppu {
             cycles: 0,
             scanline: 0,
-            vram: [0; 0x4000]
+            vram: [0; 0x4000],
+            nmi_occurred: false,
         };
     }
 
@@ -56,11 +50,11 @@ impl Ppu {
         } else if self.scanline == 241 && self.cycles == 1 {
             // VBlank
             self.set_vblank(memory, true);
-            // TODO
+            self.nmi_occurred = true;
         } else if self.scanline == 261 && self.cycles == 1 {
             // VBlank off / pre-render line
             self.set_vblank(memory, false);
-            // TODO
+            self.nmi_occurred = false;
         }
     }
 
