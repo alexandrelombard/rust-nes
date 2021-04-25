@@ -26,7 +26,7 @@ impl Ppu {
 
     pub fn load(&mut self, rom_file: &RomFile) {
         let chr_data = rom_file.chr_data();
-        self.vram[0x0000..0x2000].clone_from_slice(&chr_data);
+        self.vram[0x0000..(0x0000 + rom_file.chr_size() as usize)].clone_from_slice(&chr_data);
     }
 
     pub fn vram_data(&self) -> &[u8;0x4000] {

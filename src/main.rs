@@ -55,8 +55,8 @@ pub fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     // Load the ROM file
-    let rom_result = RomFile::new("roms/Donkey Kong (World) (Rev A).nes");
-    // let rom_result = RomFile::new("roms/Super Mario Bros. (World).nes");
+    // let rom_result = RomFile::new("roms/Donkey Kong (World) (Rev A).nes");
+    let rom_result = RomFile::new("roms/Super Mario Bros. (World).nes");
 
     if rom_result.is_ok() {
         let rom_file = rom_result.unwrap();
