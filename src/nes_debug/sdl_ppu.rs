@@ -24,13 +24,13 @@ fn val_to_color(val: u8) -> [u8; 3] {
 fn val_to_color_2bpp(val: u8) -> [u8; 3] {
     return match val {
         0 => {
-            [102, 102, 102] // Light grey
+            [11, 72, 0]     // Dark green
         },
         1 => {
             [0, 42, 136]    // Dark blue
         },
         2 => {
-            [11, 72, 0]     // Dark green
+            [102, 102, 102] // Light grey
         },
         _ => {
             [0, 0, 0]
@@ -57,25 +57,14 @@ fn get_colors_2bpp(val: u8) -> [u8; 4 * 3] {
 
 pub fn fill_texture_chr_data(texture: &mut Texture, ppu: &Ppu) {
     texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
-        for i in 0x0 as u32..0x2000 {
-            let val = ppu.read_vram(i as u16);
-            // let color = val_to_color(val);
-            let colors = get_colors_2bpp(val);
-            buffer[(12 * i) as usize]      = colors[0];
-            buffer[(12 * i + 1) as usize]  = colors[1];
-            buffer[(12 * i + 2) as usize]  = colors[2];
-
-            buffer[(12 * i + 3) as usize]  = colors[3];
-            buffer[(12 * i + 4) as usize]  = colors[4];
-            buffer[(12 * i + 5) as usize]  = colors[5];
-
-            buffer[(12 * i + 6) as usize]  = colors[6];
-            buffer[(12 * i + 7) as usize]  = colors[7];
-            buffer[(12 * i + 8) as usize]  = colors[8];
-
-            buffer[(12 * i + 9) as usize]  = colors[9];
-            buffer[(12 * i + 10) as usize] = colors[10];
-            buffer[(12 * i + 11) as usize] = colors[11];
+        let tile0 = ppu.get_chr_tile(1, 1);
+        for i in 0..8 {
+            for j in 0..8 {
+                let color = val_to_color_2bpp(tile0[i][j]);
+                buffer[i * (256 * 3) + (3 * j) % (256 * 3)] = color[0];
+                buffer[i * (256 * 3) + (3 * j + 1) % (256 * 3)] = color[1];
+                buffer[i * (256 * 3) + (3 * j + 2) % (256 * 3)] = color[2];
+            }
         }
     });
 }

@@ -4,9 +4,6 @@ use crate::rom_file::RomFile;
 // https://wiki.nesdev.com/w/index.php/PPU_registers#Status_.28.242002.29_.3C_read
 // https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
 
-
-
-
 pub struct Ppu {
     cycles: u32,
     scanline: u32,
@@ -39,6 +36,22 @@ impl Ppu {
 
     pub fn write_vram(&mut self, address: u16, val: u8) {
         self.vram[address as usize] = val;
+    }
+
+    pub fn get_chr_tile(&self, x: u8, y:u8) -> [[u8;8]; 8] {
+        let mut result = [[0;8]; 8];
+        let offset: usize = (x as usize * 8 * 2) + (y as usize * 16 * 8 * 2);
+
+        for i in 0..8 {
+            for j in 0..8 {
+                let lb = ((self.vram[i + offset] & (0b10000000 >> j)) >> (7-j));
+                let hb = ((self.vram[i + 8 + offset] & (0b10000000 >> j)) >> (7-j)) << 1;
+
+                result[i][j] = hb | lb;
+            }
+        }
+
+        return result;
     }
 
     pub fn step(&mut self, memory: &mut Memory) {

@@ -87,7 +87,7 @@ pub fn main() {
 
                 // Debug draw
                 nes_debug::sdl_ppu::fill_texture_chr_data(&mut debug_chr_texture, &ppu);
-                canvas.copy(&debug_chr_texture, None, Some(Rect::new(0, 0, 256, 256)));
+                canvas.copy(&debug_chr_texture, None, Some(Rect::new(0, 0, 1024, 1024)));
 
                 canvas.present();
 
