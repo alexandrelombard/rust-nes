@@ -22,6 +22,7 @@ use sdl2::EventPump;
 use sdl2::render::{Canvas, Texture, TextureAccess, TextureCreator};
 use std::any::Any;
 use sdl2::rect::Rect;
+use crate::nes_debug::sdl_ppu::debug_palette;
 
 pub fn main() {
     // Initialize logger
@@ -86,7 +87,7 @@ pub fn main() {
                 ppu.step(&mut cpu_mem);
 
                 // Debug draw
-                nes_debug::sdl_ppu::fill_texture_chr_data(&mut debug_chr_texture, &ppu);
+                nes_debug::sdl_ppu::fill_texture_chr_data(&mut debug_chr_texture, &ppu, debug_palette);
                 canvas.copy(&debug_chr_texture, None, Some(Rect::new(0, 0, 1024, 1024)));
 
                 canvas.present();

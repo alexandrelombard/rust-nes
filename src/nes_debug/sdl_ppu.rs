@@ -4,24 +4,7 @@ use sdl2::pixels::PixelFormatEnum;
 
 use log::{LevelFilter, Level, log_enabled, debug, error};
 
-fn val_to_color(val: u8) -> [u8; 3] {
-    return match val {
-        0 => {
-            [102, 102, 102] // Light grey
-        },
-        1 => {
-            [0, 42, 136]    // Dark blue
-        },
-        9 => {
-            [11, 72, 0]     // Dark green
-        },
-        _ => {
-            [255, 255, 255]
-        }
-    }
-}
-
-fn val_to_color_2bpp(val: u8) -> [u8; 3] {
+pub fn debug_palette(val: u8) -> [u8; 3] {
     return match val {
         0 => {
             [11, 72, 0]     // Dark green
@@ -38,33 +21,24 @@ fn val_to_color_2bpp(val: u8) -> [u8; 3] {
     }
 }
 
-fn get_colors_2bpp(val: u8) -> [u8; 4 * 3] {
-    let c3 = (val & 0b00000011);
-    let c2 = (val & 0b00001100) >> 2;
-    let c1 = (val & 0b00110000) >> 4;
-    let c0 = (val & 0b11000000) >> 6;
-
-    let color0 = val_to_color_2bpp(c0);
-    let color1 = val_to_color_2bpp(c1);
-    let color2 = val_to_color_2bpp(c2);
-    let color3 = val_to_color_2bpp(c3);
-
-    return [color0[0], color0[1], color0[2],
-        color1[0], color1[1], color1[2],
-        color2[0], color2[1], color2[2],
-        color3[0], color3[1], color3[2]];
-}
-
-pub fn fill_texture_chr_data(texture: &mut Texture, ppu: &Ppu) {
+pub fn fill_texture_chr_data<P>(texture: &mut Texture, ppu: &Ppu, palette: P) where P: Fn(u8)->[u8;3] {
+    let tile_width = 8 * 3;
+    let line_width = 8 * 256 * 3;
     texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
-        let tile0 = ppu.get_chr_tile(1, 1);
-        for i in 0..8 {
-            for j in 0..8 {
-                let color = val_to_color_2bpp(tile0[i][j]);
-                buffer[i * (256 * 3) + (3 * j) % (256 * 3)] = color[0];
-                buffer[i * (256 * 3) + (3 * j + 1) % (256 * 3)] = color[1];
-                buffer[i * (256 * 3) + (3 * j + 2) % (256 * 3)] = color[2];
+        for x in 0..16 {
+            for y in 0..16 {
+                let offset: usize = x as usize * tile_width + y as usize * line_width;
+                let tile = ppu.get_chr_tile(x, y);
+                for i in 0..8 {
+                    for j in 0..8 {
+                        let color = palette(tile[i][j]);
+                        buffer[i * (256 * 3) + (3 * j) % (256 * 3) + offset] = color[0];
+                        buffer[i * (256 * 3) + (3 * j + 1) % (256 * 3) + offset] = color[1];
+                        buffer[i * (256 * 3) + (3 * j + 2) % (256 * 3) + offset] = color[2];
+                    }
+                }
             }
         }
+
     });
 }
