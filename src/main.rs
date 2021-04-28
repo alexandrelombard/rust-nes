@@ -83,8 +83,8 @@ pub fn main() {
                 canvas.clear();
 
                 handle_user_input(&mut cpu_mem, &mut event_pump);
-                cpu.step(&mut cpu_mem);
                 ppu.step(&mut cpu_mem);
+                cpu.step(&mut cpu_mem);
 
                 // Debug draw
                 nes_debug::sdl_ppu::fill_texture_chr_data(&mut debug_chr_texture, &ppu, debug_palette);
