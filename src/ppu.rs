@@ -1,8 +1,10 @@
-use crate::memory::{Memory, PPU_STATUS};
+use crate::memory::{Memory, PPU_STATUS, PPU_CTRL};
 use crate::rom_file::RomFile;
+use crate::cpu::{FLAG_VBLANK, FLAG_NMI_OCCURRED};
 
 // https://wiki.nesdev.com/w/index.php/PPU_registers#Status_.28.242002.29_.3C_read
 // https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
+// https://github.com/FartingDeveloper/NES-emulator/blob/master/PPU.cpp
 
 pub struct Ppu {
     cycles: u32,
@@ -85,10 +87,21 @@ impl Ppu {
         let current_status = memory.read(PPU_STATUS);
         let updated_status =
             if status {
-                current_status | 0b10000000
+                current_status | FLAG_VBLANK
             } else {
-                current_status & 0b01111111
+                current_status & (!FLAG_VBLANK)
             };
         memory.write(PPU_STATUS, updated_status)
+    }
+
+    pub fn set_nmi_occurred(&self, memory: &mut Memory, status: bool) {
+        let current_status = memory.read(PPU_CTRL);
+        let updated_status =
+            if status {
+                current_status | FLAG_NMI_OCCURRED
+            } else {
+                current_status & (!FLAG_NMI_OCCURRED)
+            };
+        memory.write(PPU_CTRL, updated_status)
     }
 }

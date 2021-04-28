@@ -17,6 +17,9 @@ const FLAG_U: u8                    = 0b00100000;
 const FLAG_OVERFLOW: u8             = 0b01000000;
 const FLAG_NEGATIVE: u8             = 0b10000000;
 
+pub const FLAG_NMI_OCCURRED: u8     = 0b10000000;
+pub const FLAG_VBLANK: u8           = 0b10000000;
+
 pub enum Instruction {
     ALR,
     ANC,
